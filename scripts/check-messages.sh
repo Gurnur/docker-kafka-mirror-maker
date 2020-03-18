@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
-cd /opt/kafka_2.11-0.10.0.1
-bin/kafka-console-consumer.sh --zookeeper zk1-$1:2181 --topic mirror.maker.topic --from-beginning
+cd /opt/kafka
+bin/kafka-console-consumer.sh --bootstrap-server kafka$1:9092 --topic Topic --from-beginning 

@@ -1,47 +1,77 @@
-version: '2'
+version: '3.7'
 services:
-    zk1-dc1:
-      image: zookeeper:3.4.9
+    zoo1:
+      image: zookeeper
+      restart: always
+      hostname: zoo1
+      container_name: zoo1
       environment:
         ZOO_MY_ID: 1
-        ZOO_SERVERS: server.1=zk1-dc1:2888:3888
-    kafka1-dc1:
-      image: wurstmeister/kafka:0.10.0.1
-      hostname: kafka1-dc1
+        ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181
+      networks:
+        - dc1
+
+    kafka1:
+      image: wurstmeister/kafka
+      container_name: kafka1
+      restart: always
       environment:
-        KAFKA_ADVERTISED_HOST_NAME: kafka1-dc1
+        KAFKA_ADVERTISED_HOST_NAME: kafka1
         KAFKA_ADVERTISED_PORT: 9092
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
         KAFKA_BROKER_ID: 1
-        KAFKA_ZOOKEEPER_CONNECT: zk1-dc1:2181
-        KAFKA_CREATE_TOPICS: "mirror.maker.topic:1:1"
-      links:
-        - zk1-dc1
-    zk1-dc2:
-      image: zookeeper:3.4.9
+        KAFKA_ZOOKEEPER_CONNECT: zoo1:2181
+        KAFKA_CREATE_TOPICS: "Topic:1:1"
+      depends_on:
+        - zoo1
+      networks:
+        - dc1
+      
+    zoo2:
+      image: zookeeper
+      restart: always
+      hostname: zoo2
+      container_name: zoo2
       environment:
-        ZOO_MY_ID: 1
-        ZOO_SERVERS: server.1=zk1-dc2:2888:3888
-    kafka1-dc2:
-      image: wurstmeister/kafka:0.10.0.1
-      hostname: kafka1-dc2
+        ZOO_MY_ID: 2
+        ZOO_SERVERS: server.2=zoo2:2888:3888;2181
+      networks:
+        - dc2
+
+    kafka2:
+      image: wurstmeister/kafka
+      container_name: kafka2
+      restart: always
       environment:
-        KAFKA_ADVERTISED_HOST_NAME: kafka1-dc2
+        KAFKA_ADVERTISED_HOST_NAME: kafka2
         KAFKA_ADVERTISED_PORT: 9092
-        KAFKA_BROKER_ID: 1
-        KAFKA_ZOOKEEPER_CONNECT: zk1-dc2:2181
-      links:
-        - zk1-dc2
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9092
+        KAFKA_BROKER_ID: 2
+        KAFKA_ZOOKEEPER_CONNECT: zoo2:2181
+      depends_on:
+        - zoo2
+      networks:
+        - dc2
+
     mirror-maker:
-      image: wurstmeister/kafka:0.10.0.1
+      image: wurstmeister/kafka
+      container_name: mirror-maker
       command: "/scripts/mirror-maker-entrypoint.sh"
-      links: 
-        - zk1-dc1
-        - kafka1-dc1
-        - zk1-dc2
-        - kafka1-dc2
+      depends_on: 
+        - zoo1
+        - kafka1
+        - zoo2
+        - kafka2
       volumes:
-        - "./scripts:/scripts:ro"
-        - "./config/consumer.properties:/opt/kafka_2.11-0.10.0.1/config/consumer.properties:ro"
-        - "./config/producer.properties:/opt/kafka_2.11-0.10.0.1/config/producer.properties:ro"
+        - "./scripts:/scripts"
+        - "./config/consumer.properties:/opt/kafka/config/consumer.properties"
+        - "./config/producer.properties:/opt/kafka/config/producer.properties"
+      networks:
+        - dc1
+        - dc2
+networks: 
+  dc1:
+  dc2:
+  
 
 
