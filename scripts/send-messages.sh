@@ -5,7 +5,7 @@ echo "Removing old messages"
 rm -f /tmp/messages.txt
 
 echo "Generating random messages"
-for MSG_ID in `seq 1 1000`
+for MSG_ID in `seq 1 100`
 do
     echo -e "{ "messageId": $RANDOM };" >> /tmp/messages.txt
 done

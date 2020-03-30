@@ -1,7 +1,7 @@
 version: '3.7'
 services:
     zoo1:
-      image: zookeeper
+      image: zookeeper:latest
       restart: always
       hostname: zoo1
       container_name: zoo1
@@ -12,7 +12,7 @@ services:
         - dc1
 
     kafka1:
-      image: wurstmeister/kafka
+      image: wurstmeister/kafka:2.12-2.4.1
       container_name: kafka1
       restart: always
       environment:
@@ -28,7 +28,7 @@ services:
         - dc1
       
     zoo2:
-      image: zookeeper
+      image: zookeeper:latest
       restart: always
       hostname: zoo2
       container_name: zoo2
@@ -39,7 +39,7 @@ services:
         - dc2
 
     kafka2:
-      image: wurstmeister/kafka
+      image: wurstmeister/kafka:2.12-2.4.1
       container_name: kafka2
       restart: always
       environment:
@@ -48,14 +48,15 @@ services:
         KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9092
         KAFKA_BROKER_ID: 2
         KAFKA_ZOOKEEPER_CONNECT: zoo2:2181
+        KAFKA_CREATE_TOPICS: "Topic2:1:1"
       depends_on:
         - zoo2
       networks:
         - dc2
 
-    mirror-maker:
-      image: wurstmeister/kafka
-      container_name: mirror-maker
+    mirror-maker1:
+      image: wurstmeister/kafka:2.12-2.4.1
+      container_name: mirror-maker1
       command: "/scripts/mirror-maker-entrypoint.sh"
       depends_on: 
         - zoo1
@@ -64,8 +65,23 @@ services:
         - kafka2
       volumes:
         - "./scripts:/scripts"
-        - "./config/consumer.properties:/opt/kafka/config/consumer.properties"
-        - "./config/producer.properties:/opt/kafka/config/producer.properties"
+        - "./config/connect-mirror-maker.properties:/opt/kafka/config/connect-mirror-maker.properties"
+      networks:
+        - dc1
+        - dc2
+
+    mirror-maker2:
+      image: wurstmeister/kafka:2.12-2.4.1
+      container_name: mirror-maker2
+      command: "/scripts/mirror-maker-entrypoint.sh"
+      depends_on: 
+        - zoo1
+        - kafka1
+        - zoo2
+        - kafka2
+      volumes:
+        - "./scripts:/scripts"
+        - "./config/connect-mirror-maker.properties:/opt/kafka/config/connect-mirror-maker.properties"
       networks:
         - dc1
         - dc2
